@@ -8,7 +8,7 @@ from keyboards import user_keyboards, admin_keyboards
 from state.user_state import Registration
 from state.admin_state import AdminState
 from pybots.admin_bot import select_user, update_bonus, check_ttl_gift_bonus, check_super_adm, super_find_user, \
-    select_all_users
+    select_all_users, update_state, select_state
 from crossover import user_bot
 import re
 from datetime import datetime
@@ -167,22 +167,23 @@ async def reg_user(message: types.Message, state: FSMContext):
 
 @router.message(AdminState.picture)
 async def admin_start2(message: types.Message, state: FSMContext):
-    # users = select_all_users()
+    users = select_all_users()
     try:
         pic = message.photo[-1].file_id
         msg = message.caption
-        # for user_tlgm_id in users:
-        await user_bot.send_photo(chat_id=message.from_user.id,
-                                  photo=pic,
-                                  caption=msg)
+        for user_tlgm_id in users:
+            await user_bot.send_photo(chat_id=user_tlgm_id[0],
+                                      photo=pic,
+                                      caption=msg)
     except Exception:
         msg = message.text
-        # for user_tlgm_id in users:
-        await user_bot.send_message(chat_id=message.from_user.id,
-                                    text=msg)
+        for user_tlgm_id in users:
+            await user_bot.send_message(chat_id=user_tlgm_id[0],
+                                        text=msg)
     await user_bot.send_message(chat_id=message.from_user.id,
                                 text='❗️Сообщение всем отправлено!',
                                 reply_markup=admin_keyboards.ib_root)
+    await state.clear()
     await state.set_state(AdminState._pass)
 
 
@@ -196,6 +197,7 @@ async def reg_user(message: types.Message):
 async def reg_user(message: types.Message, state: FSMContext):
     await user_bot.send_message(chat_id=message.from_user.id,
                                 text='❗️Пока!', reply_markup=admin_keyboards.kb_find)
+    await state.clear()
     await state.set_state(AdminState._pass)
 
 
@@ -239,7 +241,8 @@ async def reg_user(message: types.Message, state: FSMContext):
             dt = datetime.strptime(birthday['bd'], '%d.%m.%Y')
             if insert_birthday(str(datetime.strftime(dt, '%Y-%m-%d')), message.from_user.id):
                 create_card(message.from_user.id)
-                await message.answer('Добро пожаловать в бонусную программу Crossover Market!',
+                await message.answer('Добро пожаловать в бонусную программу Crossover Market!\n'
+                                     '❗️Дарим 300 бонусных баллов за регистрацию!',
                                      reply_markup=user_keyboards.kb_information)
                 await state.set_state(Registration._pass)
     except Exception:
@@ -301,6 +304,7 @@ async def admin_start2(message: types.Message, state: FSMContext):
     except Exception:
         await message.answer('❗️Пользователь не найден или неверно введен номер телефона/карты',
                              reply_markup=admin_keyboards.kb_find)
+        await state.clear()
         await state.set_state(AdminState._pass)
 
 
@@ -343,10 +347,12 @@ async def admin_start4(message: types.Message, state: FSMContext):
             new_bonus = 0
             new_gift_bonus = 0
             string = f'Будет списано баллов:   <b>{"%.2f" % all_bonus}</b>'
-        await state.update_data(adm=message.from_user.id)
-        await state.update_data(new_bonus=new_bonus)
-        await state.update_data(new_gift_bonus=new_gift_bonus)
-        await state.update_data(check_ttl=check_ttl)
+        user_name = value['number'][0]
+        adm_id = message.from_user.id
+        user_id = value['number'][4]
+        card = value['number'][2]
+        ttl_gb = value['number'][6]
+        update_state(adm_id, new_bonus, new_gift_bonus, card, check_ttl, ttl_gb, user_name, user_id)
         await message.answer(text=f'Новая цена покупки: <b>{"%.2f" % new_cost}</b>\n'
                                   f'{string}\n\n'
                                   f'❗️Ожидайте подтверждения покупателя!',
@@ -358,32 +364,36 @@ async def admin_start4(message: types.Message, state: FSMContext):
                                     parse_mode='HTML',
                                     reply_markup=admin_keyboards.kb_bool)
         await state.set_state(AdminState._pass)
-    except Exception:
+    except Exception as e:
+        print(e)
         await message.answer('❗️Неверно введена стоимость покупки', reply_markup=admin_keyboards.kb_find)
+        await state.clear()
         await state.set_state(AdminState._pass)
 
 
 @router.message(F.text == 'Да')  #
 async def admin_start5(message: types.Message, state: FSMContext):
-    value = await state.storage.get_data(list(state.storage.storage.keys())[0])
-    adm_id = value['adm']
-    bonus = value['new_bonus']
-    gift_bonus = value['new_gift_bonus']
-    card = value['number'][2]
-    check_ttl = value['check_ttl']
-    ttl_gb = value['number'][6]
+    # value = await state.storage.get_data(list(state.storage.storage.keys())[1])
+    value = select_state()
+    adm_id = value[0]
+    bonus = value[1]
+    gift_bonus = value[2]
+    card = value[3]
+    check_ttl = value[4]
+    ttl_gb = value[5]
     string = f'\n❗️Успейте потратить бонусные баллы до ' \
              f'<b>{datetime.strftime(ttl_gb, "%d.%m.%Y")}</b>!\n' if check_ttl else ''
     update_bonus(bonus, gift_bonus, card)
-    await user_bot.send_message(chat_id=value['number'][4],
-                                text=f'❗️Баллы успешно списаны!\n\n'
-                                     f'🤑Балланс: {bonus + gift_bonus} баллов.\n\n'
-                                     f'{string}\n',
-                                parse_mode='HTML',
-                                reply_markup=user_keyboards.kb_information)
+    await message.answer(text=f'❗️Баллы успешно списаны!\n\n'
+                              f'🤑Балланс: {bonus + gift_bonus} баллов.\n\n'
+                              f'{string}\n',
+                         parse_mode='HTML',
+                         reply_markup=user_keyboards.kb_information)
     await user_bot.send_message(chat_id=adm_id,
-                                text=f'❗️Баллы успешно списаны у покупателя {value["number"][0]}!',
-                                reply_markup=admin_keyboards.kb_find)
+                                text=f'❗️Баллы успешно списаны у покупателя {value[6]}!',
+                                reply_markup=admin_keyboards.kb_find
+                                )
+    await state.clear()
     await state.set_state(AdminState._pass)
 
 
@@ -393,6 +403,7 @@ async def admin_start6(message: types.Message, state: FSMContext):
     adm_id = value['adm']
     await message.answer('❗️Операция отменена!', reply_markup=user_keyboards.kb_information)
     await user_bot.send_message(chat_id=adm_id, text='❗️Операция отменена!', reply_markup=admin_keyboards.kb_find)
+    await state.clear()
     await state.set_state(AdminState._pass)
 
 
@@ -405,6 +416,7 @@ async def admin_start7(message: types.Message, state: FSMContext):
 @router.message(F.text == 'Отменить операцию')
 async def admin_start7(message: types.Message, state: FSMContext):
     await message.answer(f'❗️Операция отменена!', reply_markup=admin_keyboards.kb_find)
+    await state.clear()
     await state.set_state(AdminState._pass)
 
 
@@ -427,4 +439,5 @@ async def admin_start8(message: types.Message, state: FSMContext):
                                 reply_markup=user_keyboards.kb_information)
     await message.answer(f'❗️{"%.2f" % (new_bonus - bonus)} баллов успешно добавлены покупателю {value["number"][0]}!',
                          reply_markup=admin_keyboards.kb_find)
+    await state.clear()
     await state.set_state(AdminState._pass)

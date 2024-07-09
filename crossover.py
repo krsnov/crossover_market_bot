@@ -25,10 +25,10 @@ dp = Dispatcher()
 
 
 async def main():
-    # scheduler = AsyncIOScheduler()
-    # scheduler.add_job(check_users_birthday, trigger='cron', day_of_week='*',
-    #                   args=(user_bot,), hour=10, minute=30, timezone='Europe/Moscow')
-    # scheduler.start()
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(check_users_birthday, trigger='cron', day_of_week='*',
+                      args=(user_bot,), hour=10, minute=30, timezone='Europe/Moscow')
+    scheduler.start()
     dp.include_routers(user_handlers.router)
     await dp.start_polling(user_bot)
 

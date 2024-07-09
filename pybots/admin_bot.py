@@ -59,6 +59,28 @@ def update_bonus(bonus, gift_bonus, number):
     con.close()
 
 
+def update_state(adm_id, new_bonus, new_gift_bonus, card, check_ttl, ttl_gb, user_name, user_id):
+    con = psycopg2.connect(db_connection_string)
+    con.set_client_encoding('UTF8')
+    with con.cursor() as cur:
+        cur.execute('update state '
+                    'set adm_id = %s, new_bonus = %s, new_gift_bonus = %s, card = %s, check_ttl = %s, '
+                    'ttl_gb = %s, user_name = %s, user_id = %s',
+                    (adm_id, new_bonus, new_gift_bonus, card, check_ttl, ttl_gb, user_name, user_id,))
+        con.commit()
+    con.close()
+
+
+def select_state():
+    con = psycopg2.connect(db_connection_string)
+    con.set_client_encoding('UTF8')
+    with con.cursor() as cur:
+        cur.execute('select adm_id, new_bonus, new_gift_bonus, card, check_ttl, ttl_gb, user_name, user_id from state')
+        value = cur.fetchall()[0]
+    con.close()
+    return value
+
+
 def check_ttl_gift_bonus(gift_bonus, ttl_gb):
     try:
         assert gift_bonus

@@ -53,7 +53,7 @@ def create_card(tlgm_id):
     con.set_client_encoding('UTF8')
     try:
         with con.cursor() as cur:
-            cur.execute(f'update users set card = %s, bonus = 0 where tlgm_id = %s', (card, tlgm_id,))
+            cur.execute(f'update users set card = %s, bonus = 300, gift_bonus = 0 where tlgm_id = %s', (card, tlgm_id,))
             con.commit()
         con.close()
     except Exception:
