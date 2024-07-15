@@ -37,6 +37,16 @@ def select_all_users():
     return users
 
 
+def select_all_data():
+    con = psycopg2.connect(db_connection_string)
+    con.set_client_encoding('UTF8')
+    with con.cursor() as cur:
+        cur.execute('select name, phone, bonus, add_date from users')
+        data = cur.fetchall()
+    con.close()
+    return data
+
+
 def super_find_user(number, rool):
     try:
         con = psycopg2.connect(db_connection_string)

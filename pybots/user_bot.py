@@ -2,6 +2,7 @@ import psycopg2
 from config import db_connection_string
 import random
 import string
+from datetime import datetime
 
 
 def insert_user(id, name):
@@ -9,8 +10,8 @@ def insert_user(id, name):
         con = psycopg2.connect(db_connection_string)
         con.set_client_encoding('UTF8')
         with con.cursor() as cur:
-            cur.execute('insert into users (tlgm_id, roles, name) values %s on conflict (tlgm_id) do NOTHING',
-                        [(id, False, name,)])
+            cur.execute('insert into users (tlgm_id, roles, name, add_date) values %s on conflict (tlgm_id) do NOTHING',
+                        [(id, False, name, datetime.now().date().isoformat(),)])
             con.commit()
         con.close()
         return True
@@ -75,7 +76,7 @@ def select_tokens():
     con.set_client_encoding('UTF8')
     with con.cursor() as cur:
         cur.execute('select token from tokens')
-        tokens = cur.fetchall()
+        tokens = cur.fetchall()[0]
     con.close()
     return tokens
 
@@ -83,6 +84,9 @@ def select_tokens():
 def check_users(id):
     con = psycopg2.connect(db_connection_string)
     con.set_client_encoding('UTF8')
+    with con.cursor() as cur:
+        cur.execute('delete from users where birthday is null or phone is null or card is null')
+        con.commit()
     try:
         with con.cursor() as cur:
             cur.execute('select id, roles from users where tlgm_id = %s', (id,))

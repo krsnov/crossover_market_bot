@@ -42,6 +42,7 @@ ib_root = InlineKeyboardMarkup(
     inline_keyboard=[[InlineKeyboardButton(text='Разослать сообщение', callback_data='send_msg')],
                      [InlineKeyboardButton(text='Админка', callback_data='admin')],
                      [InlineKeyboardButton(text='Накинуть бонусов', callback_data='bonus')],
+                     [InlineKeyboardButton(text='Экспорт БД в Excel', callback_data='exl')],
                      [InlineKeyboardButton(text='Выйти', callback_data='exit')]])
 
 kb_cancel = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Отменить операцию')]],

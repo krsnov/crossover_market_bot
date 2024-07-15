@@ -20,7 +20,7 @@ async def check_users_birthday(bot):
 
 
 tokens = select_tokens()
-user_bot = Bot(token=tokens[1][0])
+user_bot = Bot(token=tokens[0])
 dp = Dispatcher()
 
 

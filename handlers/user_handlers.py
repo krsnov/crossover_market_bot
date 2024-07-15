@@ -1,6 +1,6 @@
 from aiogram.filters.command import Command
 from aiogram import types, Router, F
-from aiogram.types import ReplyKeyboardRemove
+from aiogram.types import ReplyKeyboardRemove, FSInputFile
 from aiogram.fsm.context import FSMContext
 from pybots.user_bot import insert_user, insert_phone_numbers, insert_birthday, create_card, select_card_information, \
     check_users
@@ -8,11 +8,13 @@ from keyboards import user_keyboards, admin_keyboards
 from state.user_state import Registration
 from state.admin_state import AdminState
 from pybots.admin_bot import select_user, update_bonus, check_ttl_gift_bonus, check_super_adm, super_find_user, \
-    select_all_users, update_state, select_state
+    select_all_users, update_state, select_state, select_all_data
 from crossover import user_bot
 import re
 from datetime import datetime
 import time
+import pandas as pd
+import os
 
 router = Router()
 
@@ -184,6 +186,18 @@ async def admin_start2(message: types.Message, state: FSMContext):
                                 text='❗️Сообщение всем отправлено!',
                                 reply_markup=admin_keyboards.ib_root)
     await state.clear()
+    await state.set_state(AdminState._pass)
+
+
+@router.callback_query(F.data == 'exl')
+async def reg_user(message: types.Message, state: FSMContext):
+    data = select_all_data()
+    df = pd.DataFrame(data, columns=['Имя', 'Телефон', 'Баллы', 'Дата добавления'])
+    pd.set_option()
+    df.to_excel('export.xlsx', index=False)
+    file = FSInputFile('export.xlsx')
+    await user_bot.send_document(chat_id=message.from_user.id, document=file)
+    os.remove('export.xlsx')
     await state.set_state(AdminState._pass)
 
 

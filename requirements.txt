@@ -11,9 +11,12 @@ frozenlist==1.4.1
 idna==3.7
 magic-filter==1.0.12
 multidict==6.0.5
+numpy==2.0.0
+pandas==2.2.2
 psycopg2==2.9.9
 pydantic==2.5.3
 pydantic_core==2.14.6
+python-dateutil==2.9.0.post0
 pytz==2024.1
 six==1.16.0
 typing_extensions==4.11.0
